@@ -9,6 +9,9 @@
 #define IDC_CHOOSE                      1003
 #define IDC_FONTWEIGHT                  1004
 #define IDC_FONTFIXED                   1005
+#define IDC_FONTBOLD					1045
+#define IDC_FONTITALIC                  1051
+#define IDC_SZALL                       1009
 #define IDC_SZ10                        1010
 #define IDC_SZ12                        1011
 #define IDC_SZ14                        1012
@@ -26,6 +29,8 @@
 #define IDC_SZ56                        1024
 #define IDC_SZ64                        1025
 #define IDC_STATIC						200
+#define IDC_PREVIEW					    2001
+#define IDC_PREVIEWTEXT					2002
 
 // Next default values for new objects
 // 
