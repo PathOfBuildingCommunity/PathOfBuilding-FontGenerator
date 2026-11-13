@@ -87,10 +87,11 @@ void glFontGenV2_c::Build(HDC hdc)
 	auto& current_height = heights.emplace_back();
 	current_height.height = height;
 
-	for (unsigned k = 0; k < 0x500; k++) {
-		if (k >= 128 && k < 0x400) {
-			continue;
-		}
+	std::vector<unsigned> characters;
+	for (unsigned k = 0; k < 128; k++) characters.push_back(k);
+	for (unsigned k = 0x400; k < 0x500; k++) characters.push_back(k);
+	characters.insert(characters.end(), { 0xabu, 0xbbu, 0x2013u, 0x2014u, 0x2122u });
+	for (unsigned k : characters) {
 		if (k >= 128) {
 			const WCHAR character = static_cast<WCHAR>(k);
 			WORD index = 0xffff;

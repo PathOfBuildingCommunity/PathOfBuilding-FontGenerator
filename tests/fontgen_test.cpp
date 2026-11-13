@@ -20,11 +20,12 @@ int main()
 	std::ifstream stream("Generated Fonts/CyrillicTest.tgf");
 	std::string metadata((std::istreambuf_iterator<char>(stream)), {});
 	int failures = 0;
-	for (unsigned codepoint : { 0x401u, 0x410u, 0x44fu, 0x451u }) {
+	// Notes repair clause 3: punctuation used by the translated notes.
+	for (unsigned codepoint : { 0x401u, 0x410u, 0x44fu, 0x451u, 0x2013u, 0x2014u, 0xabu, 0xbbu, 0x2122u }) {
 		bool present = metadata.find("GLYPH_U32 " + std::to_string(codepoint) + " ") != std::string::npos;
-		std::cout << (present ? "PASS" : "FAIL") << ": exports Cyrillic codepoint " << codepoint << "\n";
+		std::cout << (present ? "PASS" : "FAIL") << ": exports Unicode codepoint " << codepoint << "\n";
 		failures += !present;
 	}
-	std::cout << "4 tests, " << failures << " failures\n";
+	std::cout << "9 tests, " << failures << " failures\n";
 	return failures != 0;
 }
