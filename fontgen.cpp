@@ -41,6 +41,7 @@ typedef struct {
 
 // Glyph data
 struct glyphDat_s {
+	unsigned codepoint;
 	unsigned x, y;
 	unsigned width;
 	int spleft;
@@ -86,16 +87,27 @@ void glFontGenV2_c::Build(HDC hdc)
 	auto& current_height = heights.emplace_back();
 	current_height.height = height;
 
-	for (unsigned k = 0; k < 128; k++) {
+	std::vector<unsigned> characters;
+	for (unsigned k = 0; k < 128; k++) characters.push_back(k);
+	for (unsigned k = 0x400; k < 0x500; k++) characters.push_back(k);
+	characters.insert(characters.end(), { 0xabu, 0xbbu, 0x2013u, 0x2014u, 0x2122u });
+	for (unsigned k : characters) {
+		if (k >= 128) {
+			const WCHAR character = static_cast<WCHAR>(k);
+			WORD index = 0xffff;
+			if (GetGlyphIndicesW(hdc, &character, 1, &index, GGI_MARK_NONEXISTING_GLYPHS) == GDI_ERROR || index == 0xffff) {
+				continue;
+			}
+		}
 		// Get glyph
 		GLYPHMETRICS gm;
 		const MAT2 m2i = { 0, 1, 0, 0, 0, 0, 0, 1 };
-		const unsigned bbSize = GetGlyphOutline(hdc, k, GGO_GRAY8_BITMAP, &gm, 0, NULL, &m2i);
-		if (bbSize < 0) {
+		const unsigned bbSize = GetGlyphOutlineW(hdc, k, GGO_GRAY8_BITMAP, &gm, 0, NULL, &m2i);
+		if (bbSize == GDI_ERROR) {
 			return;
 		}
 		std::unique_ptr<uint8_t[]> bb = std::make_unique<uint8_t[]>(bbSize);
-		GetGlyphOutline(hdc, k, GGO_GRAY8_BITMAP, &gm, bbSize, bb.get(), &m2i);
+		GetGlyphOutlineW(hdc, k, GGO_GRAY8_BITMAP, &gm, bbSize, bb.get(), &m2i);
 
 		// Get glyph info
 		const unsigned xs = gm.gmBlackBoxX;
@@ -106,6 +118,7 @@ void glFontGenV2_c::Build(HDC hdc)
 
 		// Initialise glyph data
 		auto& glyph = current_height.glyphs.emplace_back();
+		glyph.codepoint = k;
 		glyph.width = xs;
 		glyph.spleft = xo;
 		glyph.spright = glw - (xo + xs);
@@ -291,9 +304,14 @@ void glFontGenV2_c::Finish()
 		tgf << "HEIGHT " << height_data.height << ";\n";
 		for (size_t g = 0; g < height_data.glyphs.size(); g++) {
 			const auto& glyph = height_data.glyphs[g];
-			tgf << "GLYPH " << std::setw(3) << glyph.x << " " << std::setw(3) << glyph.y << " " << std::setw(2) << glyph.width << " " << std::setw(2) << glyph.spleft << " " << std::setw(2) << glyph.spright << ";\t// " << g;
-			if (isprint(g)) {
-				tgf << " (" << (char)g << ")";
+			if (glyph.codepoint < 128) {
+				tgf << "GLYPH ";
+			} else {
+				tgf << "GLYPH_U32 " << glyph.codepoint << " ";
+			}
+			tgf << std::setw(3) << glyph.x << " " << std::setw(3) << glyph.y << " " << std::setw(2) << glyph.width << " " << std::setw(2) << glyph.spleft << " " << std::setw(2) << glyph.spright << ";\t// " << glyph.codepoint;
+			if (glyph.codepoint < 128 && isprint(glyph.codepoint)) {
+				tgf << " (" << (char)glyph.codepoint << ")";
 			}
 			tgf << "\n";
 		}

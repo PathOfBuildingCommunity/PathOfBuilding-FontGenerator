@@ -28,10 +28,42 @@ Outputs are written to `Generated Fonts/` beside the executable:
 - **TGA**: 32-bit BGRA image containing packed glyphs with premultiplied alpha. Dimensions are powers of two chosen to fit the selected glyph set.
 - **TGF metadata**:
   - Each font size starts with `HEIGHT <px>;`.
-  - Every glyph line follows `GLYPH <x> <y> <width> <left> <right>` with optional ASCII comment.
+  - ASCII entries use `GLYPH <x> <y> <width> <left> <right>` with optional ASCII comment.
+  - Available Cyrillic glyphs (U+0400 through U+04FF) use `GLYPH_U32 <codepoint> <x> <y> <width> <left> <right>;`, with a decimal codepoint.
   - `x`/`y` are the glyph origin inside the atlas, `width` is the advance width in pixels, and `left`/`right` provide side bearings.
 
 Refer to `fontgen.cpp` if you need deeper details or want to extend the format.
+
+## Extending an existing atlas
+
+Regenerating a font can change the original ASCII metrics or pixels when the
+installed font or rasterizer differs. To preserve an existing atlas, generate
+the extra glyphs at the same heights, then append them with Python and Pillow:
+
+```text
+python -m pip install Pillow
+python extend_font.py "original/Liberation Sans.tgf" "Generated Fonts/Liberation Sans.tgf" "extended/Liberation Sans.tgf"
+```
+
+The output directory receives both the extended TGF and its TGA files. Original
+glyph entries and atlas pixels stay unchanged; Unicode entries refer to the
+appended portion. Use a separate output directory. The engine must understand
+`GLYPH_U32` to display the new glyphs. Font redistribution still requires the
+font's license; the generator's license does not replace it.
+
+## Regression checks
+
+Build and run `tests/fontgen_test.cpp` from an x86 Visual Studio developer shell
+in a scratch working directory. It includes the generator implementation and
+requires `user32.lib`, `gdi32.lib`, and `comctl32.lib` when linking.
+It writes disposable font assets and checks four representative Cyrillic glyphs.
+
+```text
+python -m unittest discover -s tests -p test_extend_font.py
+```
+
+The Python tests verify preservation of original pixels and metadata and the
+coordinates and pixels of appended glyphs.
 
 ## License
 Released under the MIT License (see `LICENSE`).
